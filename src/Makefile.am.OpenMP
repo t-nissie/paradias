@@ -1,0 +1,52 @@
+# Makefile.am for paradias/src
+# Time-stamp: <2013-03-31 19:42:06 takeshi>
+# Author: Takeshi NISHIMATSU
+##
+FC=@FC@
+F77=$(FC)
+AM_FFLAGS=@FCFLAGS@
+bin_PROGRAMS = paradias
+MODULES = atom_module.F quadratic_module.F coordinates_module.F xtal_module.F dipole_dipole_functions_module.F\
+          energy_module.F average_module.F marsaglia_tsang_uni64_module.f
+paradias_SRCS = paradias.F \
+	d_V.F \
+	d_V_d_displacements.F \
+	kinetic_energy.F \
+	velocity_scaling.F \
+	rotate_spin.F \
+	update_torque.F \
+	leapfrog.F \
+	dispersion.F \
+	dispersion_gnuplot.F \
+	xtal_calc_other_parameters.F \
+	sort_eigen.F \
+	fft_3d_r2c_NxN_lower_then_copy.F \
+	dipole_dipole_3d_Ewald.F \
+	k2eigenvalues.F \
+	dynamical_matrix.F
+paradias_SOURCES = $(MODULES) $(paradias_SRCS)
+EXTRA_DIST = define.h fcc bct
+
+#install-exec-hook:
+#	cp $(DESTDIR)$(bindir)/paradias $(DESTDIR)$(bindir)/paradias-$(VERSION)
+
+# *.mod must be cleaned
+CLEANFILES=*.mod bct.* fcc.* *.lst
+
+# Dependence
+$(paradias_SRCS:.F=.o): xtal_module.o average_module.o
+$(paradias_SRCS:.F=.o) xtal_module.o: atom_module.o coordinates_module.o quadratic_module.o
+coordinates_module.o: marsaglia_tsang_uni64_module.o
+dipole_dipole_3d_Ewald.o: dipole_dipole_functions_module.o
+average_module.o: xtal_module.o coordinates_module.o energy_module.o
+
+$(paradias_SOURCES:.F=.o): define.h
+
+# Additional rules for the pretty printing:
+.pdf.ps:
+	ps2pdf -sPAPERSIZE=letter $< $@
+
+.ps.F:
+	a2ps --prologue=color --portrait --columns=1 \
+	--margin=3 --borders=off --medium=Letter\
+	-f 10.5 --pretty-print=for90-free -o - $< | ../PsDuplex > $@

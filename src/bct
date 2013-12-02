@@ -1,0 +1,34 @@
+title = 'body centered tetragonal (bct) :  {/Times-Italic a}_1=sqrt(3/2){/Times-Italic a}, {/Times-Italic a}_2=sqrt(3/2){/Times-Italic a}, {/Times-Italic a}_3={/Times-Italic a}\nThe most stable lattice structure for hardcore dipole spheres'
+# dimension = 3
+L = 32 32 32
+
+prim1 =  1.22474487139159 0.0              0.0
+prim2 =  0.0              1.22474487139159 0.0
+prim3 =  0.0              0.0              1.0
+# sqrt(3/2) = 1.22474487139159
+
+atom  = 0.0 0.0 0.0  1.0  1.0   <position, mass, effective_charge>
+atom  = 0.5 0.5 0.5  1.0  1.0   <position, mass, effective_charge>
+
+k-point = 'A'           0.5 0.5 0.5
+axis    = 'V'           16
+k-point = 'M'           0.5 0.5 0.0
+axis    = '{/Symbol S}' 16
+k-point = '{/Symbol G}' 0.0 0.0 0.0
+axis    = '{/Symbol D}' 16
+k-point = 'X'           0.5 0.0 0.0
+axis    = 'Y'           16
+k-point = 'M'           0.5 0.5 0.0
+axis    = '{/Symbol S}' 16
+k-point = '{/Symbol G}' 0.0 0.0 0.0
+axis    = '{/Symbol L}' 16
+k-point = 'Z'           0.0 0.0 0.5
+axis    = 'U'           16
+k-point = 'R'           0.5 0.0 0.5
+axis    = 'T'           16
+k-point = 'A'           0.5 0.5 0.5
+axis    = 'S'           16
+k-point = 'Z'           0.0 0.0 0.5
+
+elevation = 3.5
+dt = 0.002

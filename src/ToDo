@@ -1,0 +1,9 @@
+ifort -DHAVE_CONFIG_H -I. -I..   -I/opt/intel/composer_xe_2011_sp1.11.339/mkl/include/fftw -I/usr/include -I/usr/local/include -r8 -O3 -warn all -openmp -openmp-report2 -parallel -par-report1 -FR  -c -o dynamical_matrix.o dynamical_matrix.F
+dynamical_matrix.F(17): warning #8055: The procedure has a dummy argument that has the ALLOCATABLE, ASYNCHRONOUS, OPTIONAL, POINTER, TARGET, VALUE or VOLATILE attribute. Required explicit interface is missing from original source.   [XL]
+  call dipole_dipole_3d_Ewald(xl, xl%qd)
+------------------------------^
+
+atom_mass_inv(:) should be an allocatable array.
+
+
+refactoring: common region in leapfrog.F and velocity_scaling.F.

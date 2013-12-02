@@ -1,0 +1,24 @@
+# $ ./paradias scnn
+# $ ln -s scnn.coord scnnlf.restart
+# $ ./paradias scnnlf
+##
+title = 'sc, nearest neighbor only'
+method = 'lf'
+L = 32 32 32
+
+prim1 =  1.0 0.0 0.0
+prim2 =  0.0 1.0 0.0
+prim3 =  0.0 0.0 1.0
+
+atom  = 0.0 0.0 0.0  1.0  0.0   <position, mass, effective_charge>
+
+elevation = 0.0
+dt = 0.001
+
+init_avg = 0.0   0.0   1.0    [Angstrom]  # Average   of initial displacements
+init_dev = 0.5   0.5   0.5    [Angstrom]  # Deviation of initial displacements
+
+temperature = 0.1
+external_H_field = 0.0 0.0 0.0
+n_thermalize = 9000
+n_average    = 1000

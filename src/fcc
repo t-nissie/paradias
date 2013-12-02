@@ -1,0 +1,45 @@
+title = '3-dimensional fcc dipole lattice'
+# dimension = 3
+L = 48 48 48
+
+prim1 =  0.0               0.707106781186548 0.707106781186548
+prim2 =  0.707106781186548 0.0               0.707106781186548
+prim3 =  0.707106781186548 0.707106781186548 0.0
+
+atom  = 0.0 0.0 0.0  1.0  1.0   <position, mass, effective_charge>
+
+k-point = '{/Symbol G}' 0.000    0.000    0.000
+axis =    '{/Symbol D}' 24
+k-point = 'X'           0.000    0.500    0.500
+axis =    'Z'           12
+k-point = 'W'           0.250    0.500    0.750
+axis =    'Q'           12
+k-point = 'L'           0.500    0.500    0.500
+axis =    '{/Symbol L}' 24
+k-point = '{/Symbol G}' 0.000    0.000    0.000
+axis =    '{/Symbol S}' 18
+k-point = 'K'           0.375    0.375    0.750
+axis =    'S'           6
+k-point = 'X'           0.500    0.500    1.000
+
+elevation = 3.5
+dt = 0.002
+
+init_avg = 0.0   0.0   0.0    [Angstrom]  # Average   of initial displacements
+init_dev = 0.03  0.03  0.03   [Angstrom]  # Deviation of initial displacements
+#
+#k-point-Cartesian = '{/Symbol G}' 0.00  0.00  0.00
+#axis    = '{/Symbol D}' 16
+#k-point-Cartesian = 'X'           1.00  0.00  0.00
+#axis    = 'Z'           16
+#k-point-Cartesian = 'W'           1.00  0.50  0.00
+#axis    = 'Q'           8
+#k-point-Cartesian = 'L'           0.5   0.5   0.5
+#axis    = '{/Symbol L}' 8
+#k-point-Cartesian = '{/Symbol G}' 0.00  0.00  0.00
+#axis    = '{/Symbol S}' 16
+#k-point-Cartesian = 'K'           0.75  0.75  0.00
+#axis    = 'S'           8
+#k-point-Cartesian = 'X'           1.00  1.00  0.00
+#
+
