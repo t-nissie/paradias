@@ -1,4 +1,3 @@
-/* I/O UNIT NUMBERS */
 #define UNIT_INPUT              7
 #define UNIT_COORDINATES_WRITE  8
 #define UNIT_RESTART           10
@@ -6,7 +5,6 @@
 #define UNIT_LOG               14
 #define UNIT_AVERAGE           16
 
-/* pi, 1/sqrt(2), sqrt(3)/2, 2/sqrt(pi) */
 #define M_PI           3.14159265358979323846d0
 #define M_1_SQRT2      0.70710678118654752440d0
 #define M_SQRT3_2      0.866025403784439d0
