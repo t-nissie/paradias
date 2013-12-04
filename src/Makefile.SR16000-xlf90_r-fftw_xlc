@@ -16,4 +16,4 @@ coordinates_check: coordinates_check.o coordinates_module.o
 coordinates_check.o: coordinates_module.o
 
 clean:
-	rm -f core* *.mod *.o coordinates_check
+	rm -f core* *.mod *.o *.lst coordinates_check
