@@ -1,5 +1,5 @@
 ! coordinates_module.F -*-f90-*-
-! Time-stamp: <2013-12-04 11:09:28 takeshi>
+! Time-stamp: <2013-12-04 15:44:58 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #if defined HAVE_CONFIG_H
@@ -113,4 +113,15 @@ contains
           & c%d_V_d_displacements_R, &
           & MPI_COMM_WORLD, FFTW_MEASURE)
   end subroutine coordinates_allocate
+
+  subroutine coordinates_free(c)
+    implicit none
+    type(coordinates_type), intent(inout) :: c
+    call fftw_destroy_plan(c%plan_displacements_R2k)
+    call fftw_destroy_plan(c%plan_d_V_d_displacements_k2R)
+    call fftw_free(c%displacements_R_ptr)
+    call fftw_free(c%displacements_k_ptr)
+    call fftw_free(c%d_V_d_displacements_k_ptr)
+    deallocate(c%displacements_P)
+  end subroutine coordinates_free
 end module coordinates_module
