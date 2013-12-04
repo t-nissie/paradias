@@ -1,5 +1,5 @@
 ! coordinates_check.F -*-f90-*-
-! Time-stamp: <2013-12-03 20:37:27 takeshi>
+! Time-stamp: <2013-12-04 11:41:38 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #include "define.h"
@@ -12,10 +12,13 @@ program coordinates_check
   use, intrinsic :: iso_c_binding
   implicit none
   include 'mpif.h'
+  real*8,              parameter :: check_double = 0.1d0, accuracy = 1.0d-14
   integer(C_INTPTR_T), parameter :: n_atoms = 2
   integer(C_INTPTR_T), parameter :: Lx = 10
   integer(C_INTPTR_T), parameter :: Ly = 20
   integer(C_INTPTR_T), parameter :: Lz = 30
+  integer(C_INTPTR_T)            :: i_atom, alpha, ix, iy, iz
+
   type(coordinates_type) :: c
   integer  :: i_error, my_mpi_rank, n_mpi_procs, n_threads
 
@@ -35,44 +38,62 @@ program coordinates_check
 
   call coordinates_allocate(n_atoms, Lx, Ly, Lz, c)
 
-  c%displacements_R(:,:,:, :, :) = 0.1d0
+  ! Set a value for check
+  c%displacements_R(:,:,:, :, :) = check_double
+
+  ! r2c FFT
   call fftw_mpi_execute_dft_r2c(c%plan_displacements_R2k, &
        & c%displacements_R, c%displacements_k)
 
-  !if (my_mpi_rank.eq.0) then
-  !   write(6,'(2f13.5)') c%displacements_k(1,3,:,:,:)
-  !end if
-  write(6,*) my_mpi_rank, c%displacements_k(1,1,0,0,0)
-  write(6,*) my_mpi_rank, c%displacements_k(1,2,0,0,0)
-  write(6,*) my_mpi_rank, c%displacements_k(1,3,0,0,0)
-  write(6,*) my_mpi_rank, c%displacements_k(2,1,0,0,0)
-  write(6,*) my_mpi_rank, c%displacements_k(2,2,0,0,0)
-  write(6,*) my_mpi_rank, c%displacements_k(2,3,0,0,0)
+  ! Check results
+  do i_atom = 1, n_atoms
+     do alpha = 1, 3
+        if (my_mpi_rank.eq.0) then
+           if (abs(check_double*Lx*Ly*Lz-real(c%displacements_k(alpha,i_atom,0,0,0))) &
+                & >check_double*Lx*Ly*Lz*accuracy) then
+              write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                   & ': Error in accuracy of r2c FFT.'
+              call MPI_ABORT(MPI_COMM_WORLD, 1, i_error)
+           end if
+        else
+           if (real(c%displacements_k(alpha,i_atom,0,0,0)) > accuracy) then
+              write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                   & ': Error in accuracy of r2c FFT.'
+              call MPI_ABORT(MPI_COMM_WORLD, 2, i_error)
+           end if
+        end if
+     end do
+  end do
 
+  ! Set values for check
   c%d_V_d_displacements_k(:,:,:, :, :) = (0.0d0, 0.0d0)
   if (my_mpi_rank.eq.0) then    !!! Set a value only at the Gamma point !!!
-     c%d_V_d_displacements_k(:,:,0, 0, 0) = (0.1d0, 0.0d0)
+     c%d_V_d_displacements_k(:,:,0, 0, 0) = (check_double, 0.0d0)
   end if
+
+  ! c2r FFT
   call fftw_mpi_execute_dft_c2r(c%plan_d_V_d_displacements_k2R, &
        & c%d_V_d_displacements_k, c%d_V_d_displacements_R)
 
-  !if (my_mpi_rank.eq.0) then
-  !   write(6,'(f13.5)') c%d_V_d_displacements_R(1,3,:,:,:)
-  !end if
-  write(6,*)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,1,0,0,0)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,2,0,0,0)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,3,0,0,0)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,1,0,0,0)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,2,0,0,0)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,3,0,0,0)
-  write(6,*)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,1,0,0,1)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,2,0,0,1)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(1,3,0,0,1)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,1,0,0,1)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,2,0,0,1)
-  write(6,*) my_mpi_rank, c%d_V_d_displacements_R(2,3,0,0,1)
+  ! Check results
+!$omp parallel do
+  do iz = 0, c%local_Lz-1
+     do iy = 0, Ly-1
+        do ix = 0, Lx-1
+           do i_atom = 1, n_atoms
+              do alpha = 1, 3
+                 if (abs(check_double-c%d_V_d_displacements_R(alpha,i_atom,ix,iy,iz)) &
+                      & >check_double*accuracy) then
+                    write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                         & ': Error in accuracy of c2r FFT.'
+                    call MPI_ABORT(MPI_COMM_WORLD, 3, i_error)
+                 end if
+              end do
+           end do
+        end do
+     end do
+  end do
+!$omp end parallel do
 
   call fftw_destroy_plan(c%plan_displacements_R2k)
   call fftw_destroy_plan(c%plan_d_V_d_displacements_k2R)
