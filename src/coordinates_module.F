@@ -1,5 +1,5 @@
 ! coordinates_module.F -*-f90-*-
-! Time-stamp: <2013-12-05 06:50:54 takeshi>
+! Time-stamp: <2013-12-05 07:00:06 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #if defined HAVE_CONFIG_H
@@ -195,6 +195,9 @@ contains
     call fftw_free(c%displacements_R_ptr)
     call fftw_free(c%displacements_k_ptr)
     call fftw_free(c%d_V_d_displacements_k_ptr)
+    call fftw_free(c%C_bar_DD_k_ptr)
+    call fftw_free(c%C_tilde_short_k_ptr)
     deallocate(c%displacements_P)
+    deallocate(c%C_tilde_k)
   end subroutine coordinates_free
 end module coordinates_module
