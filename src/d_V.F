@@ -1,5 +1,5 @@
 ! d_V.F -*-f90-*-
-! Time-stamp: <2013-03-17 18:14:37 t-nissie>
+! Time-stamp: <2013-12-04 21:54:40 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 subroutine d_V(xl,e_quadratic)
@@ -10,7 +10,9 @@ subroutine d_V(xl,e_quadratic)
   real*8,          intent(out)   :: e_quadratic
   integer :: ix,iy,iz, I_atom
 
-  call displacements_FFT_R2k(xl%n_atoms,xl%L,xl%c)
+  !original call displacements_FFT_R2k(xl%n_atoms,xl%L,xl%c)
+  call fftw_mpi_execute_dft_r2c(c%plan_displacements_R2k, &
+       & c%displacements_R, c%displacements_k)
 
   call d_V_d_displacements(xl%n_atoms,xl%L,xl%c,xl%qd,e_quadratic)
 
