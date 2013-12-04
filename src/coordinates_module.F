@@ -1,5 +1,5 @@
 ! coordinates_module.F -*-f90-*-
-! Time-stamp: <2013-12-03 20:23:44 takeshi>
+! Time-stamp: <2013-12-04 11:09:28 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #if defined HAVE_CONFIG_H
@@ -56,27 +56,34 @@ contains
     call c_f_pointer(c%displacements_R_ptr, &
          &           c%displacements_R_tmp, &
          &           [2*(Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
-    c%displacements_R(      1:n_atoms, 1:3, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%displacements_R_tmp
+    c%displacements_R(1:3,       1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%displacements_R_tmp
 
     c%displacements_k_ptr = fftw_alloc_complex( alloc_local)
     call c_f_pointer(c%displacements_k_ptr, &
          &           c%displacements_k_tmp, &
          &           [  (Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
-    c%displacements_k(      1:n_atoms, 1:3, 0:Lx/2,         0:Ly-1, 0:c%local_Lz-1) => c%displacements_k_tmp
+    c%displacements_k(1:3,       1:n_atoms, 0:Lx/2,         0:Ly-1, 0:c%local_Lz-1) => c%displacements_k_tmp
 
     c%d_V_d_displacements_k_ptr = fftw_alloc_complex(alloc_local)
     call c_f_pointer(c%d_V_d_displacements_k_ptr, &
          &           c%d_V_d_displacements_k_tmp, &
          &           [  (Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
-    c%d_V_d_displacements_k(1:n_atoms, 1:3, 0:Lx/2,         0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_k_tmp
+    c%d_V_d_displacements_k(1:3, 1:n_atoms, 0:Lx/2,         0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_k_tmp
 
     !in-place! c%d_V_d_displacements_R_ptr = fftw_alloc_real(2 * alloc_local)
     call c_f_pointer(c%d_V_d_displacements_k_ptr, &
          &           c%d_V_d_displacements_R_tmp, &
          &           [2*(Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
-    c%d_V_d_displacements_R(1:n_atoms, 1:3, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_R_tmp
+    c%d_V_d_displacements_R(1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_R_tmp
+
+    allocate(c%displacements_P(1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1))
 
 ! First touch
+!$omp parallel do
+    do i = 0, c%local_Lz-1
+       c%displacements_P(:, :, :, :, i) = 0.0d0
+    end do
+!$omp end parallel do
 !$omp parallel do
     do i = 0, c%local_Lz-1
        c%displacements_R(:, :, :, :, i) = 0.0d0
@@ -85,6 +92,11 @@ contains
 !$omp parallel do
     do i = 0, c%local_Lz-1
        c%displacements_k(:, :, :, :, i) = (0.0d0, 0.0d0)
+    end do
+!$omp end parallel do
+!$omp parallel do
+    do i = 0, c%local_Lz-1
+       c%d_V_d_displacements_k(:, :, :, :, i) = (0.0d0, 0.0d0)
     end do
 !$omp end parallel do
 
