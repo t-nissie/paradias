@@ -1,5 +1,5 @@
 ! coordinates_module.F -*-f90-*-
-! Time-stamp: <2013-12-05 06:05:43 takeshi>
+! Time-stamp: <2013-12-05 06:50:54 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #if defined HAVE_CONFIG_H
@@ -21,10 +21,23 @@ module coordinates_module
      complex(C_DOUBLE_COMPLEX), pointer ::       displacements_k(:,: ,:,:,:), displacements_k_tmp(:)
      type(C_PTR) ::                         plan_displacements_R2k
 
-     type(C_PTR)                        :: d_V_d_displacements_k_ptr  !in-place!, d_V_d_displacements_R_ptr
+     type(C_PTR)                        :: d_V_d_displacements_k_ptr   ! in-place, no pointer for R
      complex(C_DOUBLE_COMPLEX), pointer :: d_V_d_displacements_k(:,: ,:,:,:), d_V_d_displacements_k_tmp(:)
      real(C_DOUBLE),            pointer :: d_V_d_displacements_R(:,: ,:,:,:), d_V_d_displacements_R_tmp(:)
      type(C_PTR) ::                   plan_d_V_d_displacements_k2R
+
+     integer n_max(3)
+     integer G_max(3)
+     real*8  elevation   ! 2*elevation will be added to diagonal terms
+     type(C_PTR)                        ::      C_bar_DD_k_ptr   ! in-place, no pointer for R
+     complex(C_DOUBLE_COMPLEX), pointer ::      C_bar_DD_k(:,:, :,:, :,:,:), C_bar_DD_k_tmp(:)
+     complex(C_DOUBLE_COMPLEX), pointer ::      C_bar_DD_R(:,:, :,:, :,:,:), C_bar_DD_R_tmp(:)
+
+     type(C_PTR)                        :: C_tilde_short_k_ptr   ! in-place, no pointer for R
+     complex(C_DOUBLE_COMPLEX), pointer :: C_tilde_short_k(:,:, :,:, :,:,:), C_tilde_short_k_tmp(:)
+     complex(C_DOUBLE_COMPLEX), pointer :: C_tilde_short_R(:,:, :,:, :,:,:), C_tilde_short_R_tmp(:)
+
+     complex(C_DOUBLE_COMPLEX), pointer ::       C_tilde_k(:,: ,:,: ,:,:,:)
   end type coordinates_type
 
 contains
@@ -89,13 +102,39 @@ contains
          &           [  (Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
     c%d_V_d_displacements_k(1:3, 1:n_atoms, 0:Lx/2,         0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_k_tmp
 
-    !in-place! c%d_V_d_displacements_R_ptr = fftw_alloc_real(2 * c%vector_local_size)
+    ! in-place, no pointer for R
     call c_f_pointer(c%d_V_d_displacements_k_ptr, &
          &           c%d_V_d_displacements_R_tmp, &
          &           [2*(Lx/2+1)*Ly*c%local_Lz*3*n_atoms])
     c%d_V_d_displacements_R(1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%d_V_d_displacements_R_tmp
 
     allocate(c%displacements_P(1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1))
+
+    c%C_bar_DD_k_ptr  = fftw_alloc_complex(c%vector_local_size*3*n_atoms)
+    call c_f_pointer(c%C_bar_DD_k_ptr, &
+         &           c%C_bar_DD_k_tmp, &
+         &           [  (Lx/2+1)*Ly*c%local_Lz*(3*n_atoms)**2])
+    c%C_bar_DD_k(1:3, 1:n_atoms, 1:3, 1:n_atoms, 0:Lx/2, 0:Ly-1, 0:c%local_Lz-1) => c%C_bar_DD_k_tmp
+
+    ! in-place, no pointer for R
+    call c_f_pointer(c%C_bar_DD_k_ptr, &
+         &           c%C_bar_DD_R_tmp, &
+         &           [2*(Lx/2+1)*Ly*c%local_Lz*(3*n_atoms)**2])
+    c%C_bar_DD_R(1:3, 1:n_atoms, 1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%C_bar_DD_R_tmp
+
+    c%C_tilde_short_k_ptr  = fftw_alloc_complex(c%vector_local_size*3*n_atoms)
+    call c_f_pointer(c%C_tilde_short_k_ptr, &
+         &           c%C_tilde_short_k_tmp, &
+         &           [  (Lx/2+1)*Ly*c%local_Lz*(3*n_atoms)**2])
+    c%C_tilde_short_k(1:3, 1:n_atoms, 1:3, 1:n_atoms, 0:Lx/2, 0:Ly-1, 0:c%local_Lz-1) => c%C_tilde_short_k_tmp
+
+    ! in-place, no pointer for R
+    call c_f_pointer(c%C_tilde_short_k_ptr, &
+         &           c%C_tilde_short_R_tmp, &
+         &           [2*(Lx/2+1)*Ly*c%local_Lz*(3*n_atoms)**2])
+    c%C_tilde_short_R(1:3, 1:n_atoms, 1:3, 1:n_atoms, 0:2*(Lx/2+1)-1, 0:Ly-1, 0:c%local_Lz-1) => c%C_tilde_short_R_tmp
+
+    allocate(c%C_tilde_k(1:3, 1:n_atoms, 1:3, 1:n_atoms, 0:Lx/2, 0:Ly-1, 0:c%local_Lz-1))
 
 ! First touch
 !$omp parallel do
@@ -116,6 +155,21 @@ contains
 !$omp parallel do
     do i = 0, c%local_Lz-1
        c%d_V_d_displacements_k(:, :, :, :, i) = (0.0d0, 0.0d0)
+    end do
+!$omp end parallel do
+!$omp parallel do
+    do i = 0, c%local_Lz-1
+       c%C_bar_DD_k(:,:, :,:, :,:,i) = (0.0d0, 0.0d0)
+    end do
+!$omp end parallel do
+!$omp parallel do
+    do i = 0, c%local_Lz-1
+       c%C_tilde_short_k(:,:, :,:, :,:,i) = (0.0d0, 0.0d0)
+    end do
+!$omp end parallel do
+!$omp parallel do
+    do i = 0, c%local_Lz-1
+       c%C_tilde_k(:,:, :,:, :,:,i) = (0.0d0, 0.0d0)
     end do
 !$omp end parallel do
 
