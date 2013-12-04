@@ -1,5 +1,5 @@
 ! coordinates_check.F -*-f90-*-
-! Time-stamp: <2013-12-04 11:41:38 takeshi>
+! Time-stamp: <2013-12-04 15:43:52 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #include "define.h"
@@ -95,13 +95,7 @@ program coordinates_check
   end do
 !$omp end parallel do
 
-  call fftw_destroy_plan(c%plan_displacements_R2k)
-  call fftw_destroy_plan(c%plan_d_V_d_displacements_k2R)
-  call fftw_free(c%displacements_R_ptr)
-  call fftw_free(c%displacements_k_ptr)
-  call fftw_free(c%d_V_d_displacements_k_ptr)
-  !in-place!call fftw_free(c%d_V_d_displacements_R_ptr)
-
+  call coordinates_free(c)
   call MPI_FINALIZE(i_error)
 end program coordinates_check
 !Local variables:
