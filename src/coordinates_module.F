@@ -1,5 +1,5 @@
 ! coordinates_module.F -*-f90-*-
-! Time-stamp: <2013-12-05 07:00:06 takeshi>
+! Time-stamp: <2013-12-05 12:43:44 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #if defined HAVE_CONFIG_H
@@ -31,11 +31,13 @@ module coordinates_module
      real*8  elevation   ! 2*elevation will be added to diagonal terms
      type(C_PTR)                        ::      C_bar_DD_k_ptr   ! in-place, no pointer for R
      complex(C_DOUBLE_COMPLEX), pointer ::      C_bar_DD_k(:,:, :,:, :,:,:), C_bar_DD_k_tmp(:)
-     complex(C_DOUBLE_COMPLEX), pointer ::      C_bar_DD_R(:,:, :,:, :,:,:), C_bar_DD_R_tmp(:)
+     real(C_DOUBLE),            pointer ::      C_bar_DD_R(:,:, :,:, :,:,:), C_bar_DD_R_tmp(:)
+     type(C_PTR) ::                        plan_C_bar_DD_R2k
 
      type(C_PTR)                        :: C_tilde_short_k_ptr   ! in-place, no pointer for R
      complex(C_DOUBLE_COMPLEX), pointer :: C_tilde_short_k(:,:, :,:, :,:,:), C_tilde_short_k_tmp(:)
-     complex(C_DOUBLE_COMPLEX), pointer :: C_tilde_short_R(:,:, :,:, :,:,:), C_tilde_short_R_tmp(:)
+     real(C_DOUBLE),            pointer :: C_tilde_short_R(:,:, :,:, :,:,:), C_tilde_short_R_tmp(:)
+     type(C_PTR) ::                   plan_C_tilde_short_R2k
 
      complex(C_DOUBLE_COMPLEX), pointer ::       C_tilde_k(:,: ,:,: ,:,:,:)
   end type coordinates_type
@@ -184,6 +186,18 @@ contains
           & FFTW_MPI_DEFAULT_BLOCK, FFTW_MPI_DEFAULT_BLOCK, &
           & c%d_V_d_displacements_k, &
           & c%d_V_d_displacements_R, &
+          & MPI_COMM_WORLD, FFTW_MEASURE)
+
+     c%plan_C_bar_DD_R2k = fftw_mpi_plan_many_dft_r2c(3, L, (3*n_atoms)**2, &
+          & FFTW_MPI_DEFAULT_BLOCK, FFTW_MPI_DEFAULT_BLOCK, &
+          & c%C_bar_DD_R, &
+          & c%C_bar_DD_k, &
+          & MPI_COMM_WORLD, FFTW_MEASURE)
+
+     c%plan_C_tilde_short_R2k = fftw_mpi_plan_many_dft_r2c(3, L, (3*n_atoms)**2, &
+          & FFTW_MPI_DEFAULT_BLOCK, FFTW_MPI_DEFAULT_BLOCK, &
+          & c%C_tilde_short_R, &
+          & c%C_tilde_short_k, &
           & MPI_COMM_WORLD, FFTW_MEASURE)
   end subroutine coordinates_allocate
 
