@@ -1,5 +1,5 @@
 ! coordinates_check.F -*-f90-*-
-! Time-stamp: <2013-12-05 12:54:10 takeshi>
+! Time-stamp: <2013-12-05 14:03:23 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #include "define.h"
@@ -156,6 +156,11 @@ program coordinates_check
         end do
      end do
   end do
+
+  call ifc_matrix(n_atoms, Lx, Ly, Lz, c)
+  if (c%local_z_offset.eq.0) then
+     do alpha=1,3; write(6,'(2f10.5)') c%C_tilde_short_k(alpha,1, alpha,1, 0,0,0); end do
+  end if
 
   call coordinates_free(c)
   call MPI_FINALIZE(i_error)
