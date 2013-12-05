@@ -1,5 +1,5 @@
 ! coordinates_check.F -*-f90-*-
-! Time-stamp: <2013-12-04 15:43:52 takeshi>
+! Time-stamp: <2013-12-05 12:54:10 takeshi>
 ! Author: Takeshi NISHIMATSU
 !!
 #include "define.h"
@@ -17,7 +17,7 @@ program coordinates_check
   integer(C_INTPTR_T), parameter :: Lx = 10
   integer(C_INTPTR_T), parameter :: Ly = 20
   integer(C_INTPTR_T), parameter :: Lz = 30
-  integer(C_INTPTR_T)            :: i_atom, alpha, ix, iy, iz
+  integer(C_INTPTR_T)            :: i_atom, j_atom, alpha, beta, ix, iy, iz
 
   type(coordinates_type) :: c
   integer  :: i_error, my_mpi_rank, n_mpi_procs, n_threads
@@ -39,7 +39,7 @@ program coordinates_check
   call coordinates_allocate(n_atoms, Lx, Ly, Lz, c)
 
   ! Set a value for check
-  c%displacements_R(:,:,:, :, :) = check_double
+  c%displacements_R(:,:, :,:,:) = check_double
 
   ! r2c FFT
   call fftw_mpi_execute_dft_r2c(c%plan_displacements_R2k, &
@@ -94,6 +94,68 @@ program coordinates_check
      end do
   end do
 !$omp end parallel do
+
+  ! Set a value for check
+  c%C_bar_DD_R(:,:, :,:, :,:,:) = check_double
+
+  ! r2c FFT
+  call fftw_mpi_execute_dft_r2c(c%plan_C_bar_DD_R2k, &
+       & c%C_bar_DD_R, c%C_bar_DD_k)
+
+  ! Check results
+  do j_atom = 1, n_atoms
+     do beta = 1, 3
+        do i_atom = 1, n_atoms
+           do alpha = 1, 3
+              if (my_mpi_rank.eq.0) then
+                 if (abs(check_double*Lx*Ly*Lz-real(c%C_bar_DD_k(alpha,i_atom,beta,j_atom,0,0,0))) &
+                      & >check_double*Lx*Ly*Lz*accuracy) then
+                    write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                         & ': Error in accuracy of r2c FFT.'
+                    call MPI_ABORT(MPI_COMM_WORLD, 4, i_error)
+                 end if
+              else
+                 if (real(c%C_bar_DD_k(alpha,i_atom,beta,j_atom,0,0,0)) > accuracy) then
+                    write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                         & ': Error in accuracy of r2c FFT.'
+                    call MPI_ABORT(MPI_COMM_WORLD, 5, i_error)
+                 end if
+              end if
+           end do
+        end do
+     end do
+  end do
+
+  ! Set a value for check
+  c%C_tilde_short_R(:,:, :,:, :,:,:) = check_double
+
+  ! r2c FFT
+  call fftw_mpi_execute_dft_r2c(c%plan_C_tilde_short_R2k, &
+       & c%C_tilde_short_R, c%C_tilde_short_k)
+
+  ! Check results
+  do j_atom = 1, n_atoms
+     do beta = 1, 3
+        do i_atom = 1, n_atoms
+           do alpha = 1, 3
+              if (my_mpi_rank.eq.0) then
+                 if (abs(check_double*Lx*Ly*Lz-real(c%C_tilde_short_k(alpha,i_atom,beta,j_atom,0,0,0))) &
+                      & >check_double*Lx*Ly*Lz*accuracy) then
+                    write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                         & ': Error in accuracy of r2c FFT.'
+                    call MPI_ABORT(MPI_COMM_WORLD, 6, i_error)
+                 end if
+              else
+                 if (real(c%C_tilde_short_k(alpha,i_atom,beta,j_atom,0,0,0)) > accuracy) then
+                    write(0,'(a,a,i3,a)')   __FILE__, ':', __LINE__ ,  &
+                         & ': Error in accuracy of r2c FFT.'
+                    call MPI_ABORT(MPI_COMM_WORLD, 7, i_error)
+                 end if
+              end if
+           end do
+        end do
+     end do
+  end do
 
   call coordinates_free(c)
   call MPI_FINALIZE(i_error)
